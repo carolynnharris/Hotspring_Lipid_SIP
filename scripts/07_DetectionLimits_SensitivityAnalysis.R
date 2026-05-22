@@ -191,8 +191,8 @@ write.csv(
   row.names = FALSE
 )
 
-
-# plot detection limit 
+###### plot detection limits  ###### 
+ 
 p_detection_limit <- ggplot(
   detection_df,
   aes(x = Ft_minus_F0_ppm, y = mu_sigma_ratio)
@@ -245,16 +245,16 @@ p_detection_limit <- ggplot(
     label = "Detection limit",
     color = "red",
     hjust = 0,
-    size = 5
+    size = 4
   ) +
   
   annotate(
     "text",
     x = 0.13,
-    y = 2.2,
+    y = 2.4,
     label = "95% CI",
     hjust = 0,
-    size = 5
+    size = 4
   ) +
   
   scale_x_log10(
@@ -350,6 +350,26 @@ write.csv(
   row.names = FALSE
 )
 
+
+##### plot sensitivity analysis ####
+# make labels for Delta2H legend
+deltaH_labels <- deltaH_scenarios %>%
+  mutate(
+    deltaH_permil = as.character(deltaH_permil),
+    legend_label = paste0(
+      round(deltaH_ppm, 1),
+      " ppm (",
+      deltaH_permil,
+      " \u2030)"
+    )
+  ) %>%
+  select(deltaH_permil, legend_label)
+
+deltaH_label_vector <- setNames(
+  deltaH_labels$legend_label,
+  deltaH_labels$deltaH_permil
+)
+
 p_sensitivity <- ggplot(
   sensitivity_df,
   aes(
@@ -364,23 +384,24 @@ p_sensitivity <- ggplot(
     color = "black",
     linewidth = 0.6
   ) +
-  
   geom_hline(
     yintercept = 14,
     color = "black",
     linewidth = 0.6
   ) +
-  
   annotate(
     "text",
     x = 0.01,
     y = 5.5,
     label = "3 to 14 days",
     color = "black",
-    size = 4
+    size = 3.6
   ) +
   geom_line(linewidth = 0.8, na.rm = TRUE) +
-  facet_wrap(~ label_panel, ncol = 1) +
+  
+  # horizontal row of panels
+  facet_wrap(~ label_panel, nrow = 1) +
+  
   scale_x_log10(
     limits = c(1e-3, 1e3),
     breaks = c(1e-3, 1e-1, 1e1, 1e3),
@@ -398,7 +419,8 @@ p_sensitivity <- ggplot(
       "1000" = "magenta",
       "10000" = "red"
     ),
-    name = expression(Delta^2 * H ~ "(\u2030)")
+    labels = deltaH_label_vector,
+    name = expression(Delta^2 * H)
   ) +
   scale_linetype_manual(
     values = c("0.56" = "solid", "0.76" = "dashed"),
@@ -406,10 +428,17 @@ p_sensitivity <- ggplot(
   ) +
   theme_bw() +
   theme(
-    strip.text = element_text(face = "bold"),
-    legend.position = "right"
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 15),
+    strip.text = element_text(face = "bold", size = 11),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10),
+    legend.position = "right",
+    legend.title = element_text(size = 11),
+    legend.text = element_text(size = 9),
+    panel.grid.minor = element_blank()
   ) +
   labs(
+    title = expression("Sensitivity analysis across "^{2}*H[2]*"O labeling solutions"),
     x = "Generation Time (years)",
     y = "Incubation Time (days)"
   )
@@ -419,7 +448,7 @@ p_sensitivity
 ggsave(
   file.path(figure_dir, "FigureS5_sensitivity_analysis.png"),
   plot = p_sensitivity,
-  width = 6,
-  height = 7,
+  width = 11,
+  height = 4.25,
   dpi = 300
 )
