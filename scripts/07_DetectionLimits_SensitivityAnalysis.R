@@ -191,11 +191,21 @@ write.csv(
   row.names = FALSE
 )
 
-p_detection_limit <- ggplot(detection_df, aes(x = Ft_minus_F0_ppm, y = mu_sigma_ratio)) +
-  geom_line(color = "red", linewidth = 0.8) +
+
+# plot detection limit 
+p_detection_limit <- ggplot(
+  detection_df,
+  aes(x = Ft_minus_F0_ppm, y = mu_sigma_ratio)
+) +
+  geom_line(
+    color = "red",
+    linewidth = 0.8
+  ) +
+  
+  # 95% CI lines
   geom_segment(
     aes(
-      x = 0,
+      x = 0.1,
       xend = detection_limit_ppm,
       y = 2,
       yend = 2
@@ -215,44 +225,61 @@ p_detection_limit <- ggplot(detection_df, aes(x = Ft_minus_F0_ppm, y = mu_sigma_
     linewidth = 0.7,
     linetype = 2
   ) +
-  annotate(
-    "text",
-    x = 0.13,
-    y = 2.3,
-    label = "95% CI",
-    hjust = 0,
-    size = 4
-  ) +
+  
+  # detection limit point
   geom_point(
     aes(
       x = detection_limit_ppm,
       y = 0.1
     ),
     shape = 18,
-    size = 4,
+    size = 5,
     color = "red"
   ) +
+  coord_cartesian(clip = "off") +
+  
   annotate(
     "text",
-    x = detection_limit_ppm + 3,
-    y = 0.11,
+    x = detection_limit_ppm * 1.18,
+    y = 0.1,
     label = "Detection limit",
     color = "red",
-    size = 4,
-    vjust = 1
+    hjust = 0,
+    size = 5
   ) +
+  
+  annotate(
+    "text",
+    x = 0.13,
+    y = 2.2,
+    label = "95% CI",
+    hjust = 0,
+    size = 5
+  ) +
+  
   scale_x_log10(
     limits = c(0.1, 100),
-    breaks = c(0.1, 1, detection_limit_ppm, 100)
+    breaks = c(0.1, 1, detection_limit_ppm, 10, 100)
   ) +
+  
   scale_y_log10(
     limits = c(0.1, 10),
-    breaks = c(0.1, 1, 2, 10, 10)
+    breaks = c(0.1, 1, 2, 10)
   ) +
+  
   theme_bw() +
+  
+  # major gridlines
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(color = "grey85")
+  ) +
+  
   labs(
     title = "Detection Limits",
-    x = expression(F[t] - F[0] ~ "(ppm)"),
+    x = expression(
+      Delta^2*H~"(ppm) ="~F[t]-F[0]
+    ),
     y = expression(mu / sigma[mu])
   )
 
@@ -268,7 +295,8 @@ ggsave(
 
 
 #### Sensitivity Analysis ####
-# calculate detctable growth rates using stronger labeling solutions (FL)
+# calculate detectable generation times using stronger labeling solutions (FL)
+# show 3-14 day incubations on the plots
 
 label_strengths <- tibble(
   label_panel = factor(
