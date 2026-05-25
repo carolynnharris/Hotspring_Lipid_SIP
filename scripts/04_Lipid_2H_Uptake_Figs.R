@@ -76,7 +76,7 @@ plot_delta_wt <- function(site, panel_letter) {
     df_site$Incubation_days,
     df_site$Delta_D_ppm_wt_mean,
     las = 1,
-    xlab = "Time (days)",
+    xlab = "Incubation Time (days)",
     ylab = expression(Delta^2 * H ~ "(ppm)"),
     ylim = c(-2, 6),
     xlim = c(0, 15),
@@ -134,7 +134,7 @@ plot_delta_wt <- function(site, panel_letter) {
     pch = df_site$pch_type
   )
   
-  mtext(panel_letter, side = 3, line = -11, cex = 1, font = 2, adj = 0.05)
+  mtext(panel_letter, side = 3, line = -12.5, cex = 1, font = 2, adj = 0.05)
   mtext(site, side = 3, line = 0.4, cex = 1, font = 2)
   
   axis(1, at = seq(0, 15, 5), cex.axis = 0.8, tck = -0.035)
@@ -167,7 +167,7 @@ plot_delta_bp <- function(site, panel_letter) {
     df_site$Incubation_days,
     df_site$Delta_D_ppm_wt_mean,
     las = 1,
-    xlab = "Time (days)",
+    xlab = "Incubation Time (days)",
     ylab = expression(Delta^2 * H ~ "(ppm)"),
     ylim = c(-2, 6),
     xlim = c(0, 15),
@@ -232,7 +232,7 @@ plot_delta_bp <- function(site, panel_letter) {
     )
   }
   
-  mtext(panel_letter, side = 3, line = -11, cex = 1, font = 2, adj = 0.05)
+  mtext(panel_letter, side = 3, line = -12.5, cex = 1, font = 2, adj = 0.05)
   
   axis(1, at = seq(0, 15, 5), cex.axis = 0.8, tck = -0.035)
   axis(2, at = seq(-2, 6, 2), las = 1, cex.axis = 0.8, tck = -0.035)
@@ -324,8 +324,8 @@ plot_tg_panel <- function(site, panel_letter) {
   )
   
   mtext("Compound", side = 2, line = 2.5, cex = 0.8)
-  mtext("Detectable Growth", col = "grey30", side = 1, font = 3, line = -11.8, adj = 0.05, cex = 0.6)
-  mtext("Undetectable Growth", col = "grey30", side = 1, font = 3, line = -11.8, adj = 0.95, cex = 0.6)
+  mtext("Detectable Growth", col = "grey30", side = 1, font = 3, line = -13, adj = 0.05, cex = 0.7)
+  mtext("Undetectable Growth", col = "grey30", side = 1, font = 3, line = -13, adj = 0.95, cex = 0.7)
   
   if (site == "Beryl") {
     arrows(
@@ -359,7 +359,7 @@ plot_tg_panel <- function(site, panel_letter) {
     pch = subset$pch
   )
   
-  mtext(panel_letter, side = 3, line = -11, cex = 1, font = 2, adj = 0.05)
+  mtext(panel_letter, side = 3, line = -12.5, cex = 1, font = 2, adj = 0.05)
   
   axis(1, at = c(1, 10, 100, 1000), labels = TRUE, cex.axis = 0.8, tck = -0.035)
   axis(
@@ -426,7 +426,7 @@ for (site in c("Beryl", "ETAT-3")) {
     df_site$Incubation_days,
     df_site$d2H_wt_mean_mean,
     las = 1,
-    xlab = "Time (days)",
+    xlab = "Incubation Time (days)",
     ylab = expression("Mean " * delta^2 * H["BP"] ~ "(" * "\u2030" * ")"),
     ylim = c(ymin, ymax),
     xlim = c(0, 15),

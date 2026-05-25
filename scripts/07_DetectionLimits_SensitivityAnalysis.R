@@ -110,7 +110,10 @@ FL_detection_ppm <- 3700 # 0.37 at % 2H
 t_detection_days <- 14 # 14-day incubations
 
 detection_df <- tibble(
-  Ft_minus_F0_ppm = seq(0.1,100,length.out=100000)
+  Ft_minus_F0_ppm = c(
+    seq(0.1, 4.9, by = 0.005),
+    seq(5, 100, by = 1)
+  )
 ) %>%
   mutate(
     F0_ppm = F0_ppm,
@@ -237,7 +240,6 @@ p_detection_limit <- ggplot(
     size = 5,
     color = "red"
   ) +
-  coord_cartesian(clip = "off") +
   
   annotate(
     "text",
@@ -299,52 +301,73 @@ ggsave(
 # calculate detectable generation times using stronger labeling solutions (FL)
 # show 3-14 day incubations on the plots
 
-label_strengths <- tibble(
-  label_panel = factor(
-    c("0.37 at% ²H", "1 at% ²H", "10 at% ²H"),
-    levels = c("0.37 at% ²H", "1 at% ²H", "10 at% ²H")
-  ),
-  FL_ppm = c(3700, 10000, 100000)
-)
+###### define error assumptions ######
+sigma_FL <- 100
+sigma_F0 <- 0.5
+sigma_Ft <- 0.5
+sigma_alpha <- 0.1
 
-alpha_scenarios <- tibble(
-  alpha_label = factor(
-    c("0.56", "0.76"),
-    levels = c("0.56", "0.76")
-  ),
-  alpha = c(0.56, 0.76)
-)
 
-deltaH_scenarios <- tibble(
-  deltaH_permil = c(10, 100, 1000, 10000),
-  deltaH_ppm = delta_to_F_ppm(deltaH_permil) - delta_to_F_ppm(0)
-)
-
-generation_times_years <- 10^seq(-3, 3, length.out = 600)
-
+###### define scenarios, calculate growth rate, T_G, and errors ######
 sensitivity_df <- expand_grid(
-  label_strengths,
-  alpha_scenarios,
-  deltaH_scenarios,
-  generation_time_years = generation_times_years
+  incubation_time_days = c(
+    seq(1, 9, by = 1),
+    seq(10, 1000, by = 10)
+  ),
+  alpha = c(0.56, 0.76),
+  FL_ppm = c(3700, 10000, 100000),
+  deltaH_ppm = c(1.56, 15.6, 156, 1555)
 ) %>%
   mutate(
-    mu_day = log(2) / (generation_time_years * 365),
+    F0_ppm = 95,
+    Ft_ppm = F0_ppm + deltaH_ppm,
     
-    # Solve LH-SIP equation for incubation time:
-    # ΔF = (1 - exp(-μt)) * (alpha * FL - F0)
-    # t = -ln(1 - ΔF / (alpha * FL - F0)) / μ
-    detectable_fraction = deltaH_ppm / (alpha * FL_ppm - F0_ppm),
-    
-    incubation_time_days = ifelse(
-      detectable_fraction > 0 & detectable_fraction < 1,
-      -log(1 - detectable_fraction) / mu_day,
+    growth_rate_day = ifelse(
+      Ft_ppm < alpha * FL_ppm,
+      -(1 / incubation_time_days) *
+        log((Ft_ppm - alpha * FL_ppm) / (F0_ppm - alpha * FL_ppm)),
       NA_real_
     ),
     
-    TG_error_years = NA_real_
+    growth_rate_year = growth_rate_day * 365,
+    
+    TG_days = log(2) / growth_rate_day,
+    TG_years = TG_days / 365,
+    
+    growth_rate_error_day = sqrt(
+      (
+        sigma_F0^2 * (alpha * FL_ppm - Ft_ppm)^2 +
+          sigma_Ft^2 * (F0_ppm - alpha * FL_ppm)^2 +
+          (F0_ppm - Ft_ppm)^2 *
+          (FL_ppm^2 * sigma_alpha^2 + alpha^2 * sigma_FL^2)
+      ) /
+        (
+          incubation_time_days^2 *
+            (F0_ppm - alpha * FL_ppm)^2 *
+            (alpha * FL_ppm - Ft_ppm)^2
+        )
+    ),
+    
+    growth_rate_error_year = growth_rate_error_day * 365,
+    
+    TG_error_days = (log(2) / growth_rate_day^2) *
+      growth_rate_error_day,
+    
+    TG_error_years = TG_error_days / 365,
+    
+    # Signal-to-error ratio
+    growth_rate_SNR = growth_rate_year /
+      growth_rate_error_year,
+    
+    # Detection limit classification
+    Detection_Limit = case_when(
+      growth_rate_SNR >= 2 ~ "Above",
+      growth_rate_SNR < 2 ~ "BDL",
+      TRUE ~ NA_character_
+    )
   )
 
+# save results
 write.csv(
   sensitivity_df,
   file.path(summary_dir, "FigureS6_sensitivity_analysis_data.csv"),
@@ -353,54 +376,63 @@ write.csv(
 
 
 ##### plot sensitivity analysis ####
+
 # make subplot labels
 panel_labels <- tibble(
+  FL_ppm = c(3700, 10000, 100000),
   label_panel = factor(
     c("0.37 at% ²H", "1 at% ²H", "10 at% ²H"),
     levels = c("0.37 at% ²H", "1 at% ²H", "10 at% ²H")
   ),
   panel_letter = c("A", "B", "C"),
-  x = 500,
-  y = 0.02
+  x = 840,
+  y = 0.002
 )
 
-# make labels for Delta2H legend
-deltaH_labels <- deltaH_scenarios %>%
+# add plotting labels
+sensitivity_df_plot <- sensitivity_df %>%
   mutate(
-    deltaH_permil = as.character(deltaH_permil),
-    legend_label = paste0(
-      round(deltaH_ppm, 1),
-      " ppm (",
-      deltaH_permil,
-      " \u2030)"
-    )
-  ) %>%
-  select(deltaH_permil, legend_label)
-
-deltaH_label_vector <- setNames(
-  deltaH_labels$legend_label,
-  deltaH_labels$deltaH_permil
-)
+    label_panel = case_when(
+      FL_ppm == 3700 ~ "0.37 at% ²H",
+      FL_ppm == 10000 ~ "1 at% ²H",
+      FL_ppm == 100000 ~ "10 at% ²H"
+    ),
+    label_panel = factor(
+      label_panel,
+      levels = c("0.37 at% ²H", "1 at% ²H", "10 at% ²H")
+    ),
+    deltaH_label = paste0(round(deltaH_ppm, 1), " ppm"),
+    alpha_label = as.character(alpha)
+  )
 
 # make plot
 p_sensitivity <- ggplot(
-  sensitivity_df,
+  sensitivity_df_plot,
   aes(
-    x = generation_time_years,
-    y = incubation_time_days,
-    color = factor(deltaH_permil),
+    x = incubation_time_days,
+    y = TG_years,
+    color = factor(deltaH_ppm),
     linetype = alpha_label
   )
 ) +
-  geom_hline(
-    yintercept = 3,
-    color = "black",
-    linewidth = 0.6
+  geom_rect(
+    aes(
+      xmin = 3,
+      xmax = 14,
+      ymin = 0.001,
+      ymax = 1000
+    ),
+    inherit.aes = FALSE,
+    fill = "grey85",
+    alpha = 0.3
   ) +
-  geom_hline(
-    yintercept = 14,
+  annotate(
+    "text",
+    x = 7,
+    y = 0.002,
+    label = "3 to 14 days",
     color = "black",
-    linewidth = 0.6
+    size = 3.6
   ) +
   geom_text(
     data = panel_labels,
@@ -413,38 +445,32 @@ p_sensitivity <- ggplot(
     fontface = "bold",
     size = 6
   ) +
-  annotate(
-    "text",
-    x = 0.01,
-    y = 5.5,
-    label = "3 to 14 days",
-    color = "black",
-    size = 3.6
-  ) +
   geom_line(linewidth = 0.8, na.rm = TRUE) +
-  
-  # horizontal row of panels
   facet_wrap(~ label_panel, nrow = 1) +
-  
   scale_x_log10(
-    limits = c(1e-3, 1e3),
-    breaks = c(1e-3, 1e-1, 1e1, 1e3),
-    labels = scales::label_math(.x)
+    limits = c(1, 1000),
+    breaks = c(1, 10, 100, 1000),
+    labels = scales::label_number()
   ) +
   scale_y_log10(
-    limits = c(1e-2, 1e2),
-    breaks = c(1e-2, 1e-1, 1, 10, 100),
+    limits = c(1e-3, 1e3),
+    breaks = c(1e-3, 1e-2, 1e-1, 1, 10, 100, 1000),
     labels = scales::label_math(.x)
   ) +
   scale_color_manual(
     values = c(
-      "10" = "blue",
-      "100" = "purple",
-      "1000" = "magenta",
-      "10000" = "red"
+      "1.56" = "blue",
+      "15.6" = "purple",
+      "156" = "magenta",
+      "1555" = "red"
     ),
-    labels = deltaH_label_vector,
-    name = expression(Delta^2 * H)
+    name = expression(Delta^2 * H),
+    labels = c(
+      "1.56" = "1.56 ppm (10 ‰ )",
+      "15.6" = "15.6 ppm (100 ‰ )",
+      "156" = "156 ppm (1,000 ‰ )",
+      "1555" = "1555 ppm (10,000 ‰ )"
+    )
   ) +
   scale_linetype_manual(
     values = c("0.56" = "solid", "0.76" = "dashed"),
@@ -463,8 +489,8 @@ p_sensitivity <- ggplot(
   ) +
   labs(
     title = expression("Sensitivity analysis across "^{2}*H[2]*"O labeling solutions"),
-    x = "Generation Time (years)",
-    y = "Incubation Time (days)"
+    x = "Incubation Time (days)",
+    y = "Generation Time (years)"
   )
 
 p_sensitivity
@@ -476,4 +502,149 @@ ggsave(
   height = 4.25,
   dpi = 300
 )
+
+
+###### print stats for fig caption ######
+
+# Panel A = 0.37 at% 2H (FL = 3700)
+# Panel C = 10 at% 2H (FL = 100000)
+# Restrict to 3-14 day incubation window and detectable results
+
+caption_df <- sensitivity_df %>%
+  filter(
+    incubation_time_days >= 3,
+    incubation_time_days <= 14,
+    Detection_Limit == "Above"
+  )
+
+##### Panel A #####
+
+# heterotrophic (alpha = 0.56)
+A_hetero <- caption_df %>%
+  filter(
+    FL_ppm == 3700,
+    alpha == 0.56
+  )
+
+A_hetero_min <- min(A_hetero$TG_years, na.rm = TRUE)
+A_hetero_max <- max(A_hetero$TG_years, na.rm = TRUE)
+
+# autotrophic (alpha = 0.76)
+A_auto <- caption_df %>%
+  filter(
+    FL_ppm == 3700,
+    alpha == 0.76
+  )
+
+A_auto_min <- min(A_auto$TG_years, na.rm = TRUE)
+A_auto_max <- max(A_auto$TG_years, na.rm = TRUE)
+
+
+##### Panel B #####
+
+# heterotrophic (alpha = 0.56)
+B_hetero <- caption_df %>%
+  filter(
+    FL_ppm == 10000,
+    alpha == 0.56
+  )
+
+B_hetero_min <- min(B_hetero$TG_years, na.rm = TRUE)
+B_hetero_max <- max(B_hetero$TG_years, na.rm = TRUE)
+
+# autotrophic (alpha = 0.76)
+B_auto <- caption_df %>%
+  filter(
+    FL_ppm == 10000,
+    alpha == 0.76
+  )
+
+B_auto_min <- min(B_auto$TG_years, na.rm = TRUE)
+B_auto_max <- max(B_auto$TG_years, na.rm = TRUE)
+
+
+##### Panel C #####
+
+# heterotrophic (alpha = 0.56)
+C_hetero <- caption_df %>%
+  filter(
+    FL_ppm == 100000,
+    alpha == 0.56
+  )
+
+C_hetero_min <- min(C_hetero$TG_years, na.rm = TRUE)
+C_hetero_max <- max(C_hetero$TG_years, na.rm = TRUE)
+
+# autotrophic (alpha = 0.76)
+C_auto <- caption_df %>%
+  filter(
+    FL_ppm == 100000,
+    alpha == 0.76
+  )
+
+C_auto_min <- min(C_auto$TG_years, na.rm = TRUE)
+C_auto_max <- max(C_auto$TG_years, na.rm = TRUE)
+
+
+##### convert short generation times to days #####
+
+A_hetero_min_days <- A_hetero_min * 365
+A_auto_min_days <- A_auto_min * 365
+
+B_hetero_min_days <- B_hetero_min * 365
+B_auto_min_days <- B_auto_min * 365
+
+C_hetero_min_days <- C_hetero_min * 365
+C_auto_min_days <- C_auto_min * 365
+
+
+##### print results #####
+
+cat(
+  "\n--------------------------------------------------\n",
+  "Figure caption values:\n",
+  "--------------------------------------------------\n\n",
+  
+  "A: 0.37 at% ²H labeling solution\n",
+  "  Heterotrophic (α = 0.56): detectable generation times = ~",
+  round(A_hetero_min_days,0),
+  " days to ~",
+  round(A_hetero_max,0),
+  " years\n",
+  
+  "  Autotrophic (α = 0.76): detectable generation times = ~",
+  round(A_auto_min_days,0),
+  " days to ~",
+  round(A_auto_max,0),
+  " years\n\n",
+  
+  "B: 1 at% ²H labeling solution\n",
+  "  Heterotrophic (α = 0.56): detectable generation times = ~",
+  round(B_hetero_min_days,0),
+  " days to ~",
+  round(B_hetero_max,0),
+  " years\n",
+  
+  "  Autotrophic (α = 0.76): detectable generation times = ~",
+  round(B_auto_min_days,0),
+  " days to ~",
+  round(B_auto_max,0),
+  " years\n\n",
+  
+  "C: 10 at% ²H labeling solution\n",
+  "  Heterotrophic (α = 0.56): detectable generation times = ~",
+  round(C_hetero_min_days,0),
+  " days to ~",
+  round(C_hetero_max,0),
+  " years\n",
+  
+  "  Autotrophic (α = 0.76): detectable generation times = ~",
+  round(C_auto_min_days,0),
+  " days to ~",
+  round(C_auto_max,0),
+  " years\n\n",
+  
+  "--------------------------------------------------\n"
+)
+
 
