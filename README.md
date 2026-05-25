@@ -62,3 +62,11 @@ Calculates LH-SIP assay detection limits and performs sensitivity analyses explo
 - incubation duration
 
 Generates Figure S5 and Figure S6.
+
+### `08_Lipid_Profiles_by_Timepoint.R`
+Generates Supplementary Figure S2 showing no changes in IPL lipid distributions over the incubation. 
+Calculates and visualizes:
+- iGDGT relative abundance distributions
+- BP relative abundance distributions
+- GDGT and BP ring indices (RI-GDGT and RI-BP)
+- average profiles across biological replicates for each Site × Type × Incubation time point
