@@ -90,10 +90,10 @@ plot_delta_wt <- function(site, panel_letter) {
     xaxt = "n",
     yaxt = "n"
   )
-  
+  # lower detection limit
   polygon(
     x = c(-1, 16, 16, -1),
-    y = c(-1.3, -1.3, 1.3, 1.3),
+    y = c(-1.5, -1.5, 1.5, 1.5),
     col = rgb(0, 0, 0, alpha = 0.1),
     border = NA
   )
@@ -181,10 +181,10 @@ plot_delta_bp <- function(site, panel_letter) {
     xaxt = "n",
     yaxt = "n"
   )
-  
+  # lower detection limit
   polygon(
     x = c(-1, 16, 16, -1),
-    y = c(-1.3, -1.3, 1.3, 1.3),
+    y = c(-1.5, -1.5, 1.5, 1.5),
     col = rgb(0, 0, 0, alpha = 0.1),
     border = NA
   )
@@ -278,8 +278,8 @@ beryl_tg <- tibble(
 etat_tg <- tibble(
   Site = "ETAT-3",
   Compound = c("BP-0", "BP-1", "BP-2", "Wt. Mean"),
-  TG = 35,
-  TG_sem = 5,
+  TG = 42,
+  TG_sem = 21,
   Col = "darkblue",
   pch = c(21, 24, 22, 16)
 )
@@ -315,9 +315,9 @@ plot_tg_panel <- function(site, panel_letter) {
     xaxt = "n",
     yaxt = "n"
   )
-  
+  # detection limits 
   polygon(
-    x = c(35, 2000, 2000, 35),
+    x = c(42, 2000, 2000, 42),
     y = c(0, 0, 10, 10),
     col = rgb(0, 0, 0, alpha = 0.08),
     border = NA
@@ -383,8 +383,8 @@ png(
 
 par(
   mfrow = c(3, 2),
-  mar = c(3, 3.5, 2, 1),
-  oma = c(1, 1, 1, 1),
+  mar = c(2.5, 3.5, 1, 1),
+  oma = c(0.5, 1, 1, 1),
   mgp = c(1.4, 0.5, 0)
 )
 

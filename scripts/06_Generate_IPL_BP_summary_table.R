@@ -74,7 +74,7 @@ format_mean_sem <- function(mean, sem, digits_mean = 0, digits_sem = 1) {
 
 #### summarize IPL BP data ####
 BP_table_raw <- dat %>%
-  group_by(Site, Type, TimePoint) %>%
+  group_by(Site, Type, Incubation_days) %>%
   summarise(
     N = n(),
     
@@ -117,14 +117,14 @@ BP_table_raw <- BP_table_raw %>%
     Site = factor(Site, levels = c("Beryl", "ETAT-3")),
     Type = factor(Type, levels = c("Control-Kill", "Control-Live", "Experimental"))
   ) %>%
-  arrange(Site, Type, TimePoint)
+  arrange(Site, Type, Incubation_days)
 
 #### format table  ####
 BP_table_formatted <- BP_table_raw %>%
   transmute(
     Site = as.character(Site),
     Type = as.character(Type),
-    `Time Point (days)` = TimePoint,
+    `Time Point (days)` = Incubation_days,
     N,
     
     `BP-0 Rel. Abund. (%)` = format_mean_sem(BP0_RelAbund_mean, BP0_RelAbund_sem, 0, 1),

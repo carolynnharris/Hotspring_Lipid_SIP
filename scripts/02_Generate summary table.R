@@ -31,7 +31,12 @@ dat <- read.csv("data_inputs/LHSIP_All_Merge.csv")
 alpha_mean <- 0.66
 alpha_sd   <- 0.10
 
-detection_limit_ppm <- 2.0011 # calculated elsewhere
+# detection limits calculated in 07_DetectionLimits_SensitivityAnalysis script
+detection_limit_ppm <- 1.4936  
+mu_detection_limit <- 0.0166
+mu_detection_limit_sem <- 0.0083
+TG_detection_limit <- 41.8
+TG_detection_limit_sem <- 20.9
 
 #### subset for IPL lipids only ####
 dat <- dat %>%
@@ -332,7 +337,7 @@ growth_results <- growth_input %>%
 #### integrate growth estimates over 3 + 14 day time points ####
 # Growth rates are weighted by incubation duration
 # ETAT-3 is excluded here because no 2H uptake was detected
-# ETAT-3 minimum generation time is calculated separately from the assay detection limit
+# ETAT-3 minimum generation time is calculated from the assay detection limit
 
 integrated_growth <- growth_results %>%
   filter(Site == "Beryl") %>% # Exclude ETAT-3 because it showed no uptake
@@ -525,29 +530,28 @@ table2_beryl_average <- integrated_growth %>%
     )
   )
 
-table2_etat3 <- dat_summary_growth %>% # calculated elsewhere based on detection limits
-  filter(
-    Site == "ETAT-3",
-    Type == "Experimental"
-  ) %>%
-  summarise(
-    Site = "ETAT-3",
-    `Time Point` = "Average",
-    `Lipid Δ²H (ppm)` = "0",
-    `μ (year⁻¹)` = paste0(
+# use assay detection limits 
+table2_etat3 <- tibble(
+  Site = "ETAT-3",
+  `Time Point` = "Average",
+  `Lipid Δ²H (ppm)` = "0",
+  
+  `μ (year⁻¹)` =
+    paste0(
       "< ",
-      round(max(growth_wt_mu_year, na.rm = TRUE), 4),
+      mu_detection_limit,
       " ± ",
-      round(max(growth_wt_mu_year_sem, na.rm = TRUE), 3)
+      mu_detection_limit_sem
     ),
-    `TG (years)` = paste0(
+  
+  `TG (years)` =
+    paste0(
       "> ",
-      round(35),
+      TG_detection_limit,
       " ± ",
-      round(5)
-    ),
-    .groups = "drop"
-  )
+      TG_detection_limit_sem
+    )
+)
 
 table2_summary <- bind_rows(
   table2_beryl_timepoints,

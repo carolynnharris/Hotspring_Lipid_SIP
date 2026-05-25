@@ -38,14 +38,6 @@ lhsip_merge <- read.csv(
 )
 
 #### define Beryl initial IPL-BP standing stock ####
-# # for Beryl, apportioned by BP relative abundance
-# initial_bp_conc <- tribble(
-#   ~Compound, ~initial_conc_ug_g,
-#   "BP-0", 4.08,
-#   "BP-1", 4.20,
-#   "BP-2", 3.72
-# ) %>%
-#   mutate(initial_conc_ug_g_sem = NA_real_)
 
 initial_bp_conc <- lhsip_merge %>%
   filter(ID_Fraction == "B01_IPL") %>%
@@ -65,9 +57,8 @@ initial_bp_conc <- lhsip_merge %>%
       BP == "BP1_total" ~ "BP-1",
       BP == "BP2_total" ~ "BP-2"
     ),
-    initial_conc_ug_g_sem = NA_real_
   ) %>%
-  select(Compound, initial_conc_ug_g, initial_conc_ug_g_sem)
+  select(Compound, initial_conc_ug_g)
 
 
 
@@ -107,17 +98,24 @@ beryl_growth_long <- integrated_growth %>%
   select(Site, Compound, mu, mu_sem, TG, TG_sem)
 
 #### calculate compound-specific production ####
+#### calculate compound-specific production ####
 BP_new_production <- beryl_growth_long %>%
   left_join(initial_bp_conc, by = "Compound") %>%
   mutate(
     production_rate_ug_g_yr = initial_conc_ug_g * mu,
     production_rate_ug_g_yr_sem = initial_conc_ug_g * mu_sem,
     
+    production_rate_ng_g_yr = production_rate_ug_g_yr * 1000,
+    production_rate_ng_g_yr_sem = production_rate_ug_g_yr_sem * 1000,
+    
     new_biomass_ug_g =
       initial_conc_ug_g * (exp(mu * t_years) - 1),
     
     new_biomass_ug_g_sem =
       initial_conc_ug_g * t_years * exp(mu * t_years) * mu_sem,
+    
+    new_biomass_ng_g = new_biomass_ug_g * 1000,
+    new_biomass_ng_g_sem = new_biomass_ug_g_sem * 1000,
     
     percent_increase =
       100 * new_biomass_ug_g / initial_conc_ug_g,
@@ -145,10 +143,22 @@ new_production_wt_mean <- BP_new_production %>%
       sqrt(sum((initial_conc_ug_g * production_rate_ug_g_yr_sem)^2, na.rm = TRUE)) /
       sum(initial_conc_ug_g, na.rm = TRUE),
     
+    production_rate_ng_g_yr =
+      weighted.mean(production_rate_ng_g_yr, w = initial_conc_ug_g, na.rm = TRUE),
+    production_rate_ng_g_yr_sem =
+      sqrt(sum((initial_conc_ug_g * production_rate_ng_g_yr_sem)^2, na.rm = TRUE)) /
+      sum(initial_conc_ug_g, na.rm = TRUE),
+    
     new_biomass_ug_g =
       weighted.mean(new_biomass_ug_g, w = initial_conc_ug_g, na.rm = TRUE),
     new_biomass_ug_g_sem =
       sqrt(sum((initial_conc_ug_g * new_biomass_ug_g_sem)^2, na.rm = TRUE)) /
+      sum(initial_conc_ug_g, na.rm = TRUE),
+    
+    new_biomass_ng_g =
+      weighted.mean(new_biomass_ng_g, w = initial_conc_ug_g, na.rm = TRUE),
+    new_biomass_ng_g_sem =
+      sqrt(sum((initial_conc_ug_g * new_biomass_ng_g_sem)^2, na.rm = TRUE)) /
       sum(initial_conc_ug_g, na.rm = TRUE),
     
     percent_increase =
@@ -179,15 +189,15 @@ table3_formatted <- table3_raw %>%
       " ± ",
       round(TG_sem)
     ),
-    `Production rate (μg g⁻¹ sed year⁻¹)` = paste0(
-      sprintf("%.2f", production_rate_ug_g_yr),
+    `Production rate (ng g⁻¹ sed year⁻¹)` = paste0(
+      sprintf("%.1f", production_rate_ng_g_yr),
       " ± ",
-      sprintf("%.2f", production_rate_ug_g_yr_sem)
+      sprintf("%.1f", production_rate_ng_g_yr_sem)
     ),
-    `New biomass (μg g⁻¹ sed)` = paste0(
-      sprintf("%.3f", new_biomass_ug_g),
+    `New biomass (ng g⁻¹ sed)` = paste0(
+      sprintf("%.2f", new_biomass_ng_g),
       " ± ",
-      sprintf("%.3f", new_biomass_ug_g_sem)
+      sprintf("%.2f", new_biomass_ng_g_sem)
     ),
     `% Increase` = paste0(
       sprintf("%.2f", percent_increase),

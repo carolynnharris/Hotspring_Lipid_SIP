@@ -10,7 +10,7 @@ graphics.off()
 # 2. Uses propagated uncertainty to identify the minimum lipid 2H enrichment
 #    where growth rate is distinguishable from zero at the 2σ level
 # 3. Creates Figure S6: lipid 2H enrichment vs. μ / σ_μ
-# 4. Creates the Figure S5 sensitivity analysis showing incubation time
+# 4. Creates the Figure S5: sensitivity analysis showing incubation time
 #    needed to detect growth across generation times, label strengths,
 #    assimilation efficiencies, and lipid 2H enrichments
 #
@@ -22,11 +22,11 @@ graphics.off()
 # - VSMOW D/H reference ratio: RVSMOW = 0.00015576
 #
 # Outputs:
-# - summary_tables/FigureS6_detection_limit_data.csv
-# - summary_tables/FigureS6_detection_limit_value.csv
-# - summary_tables/FigureS5_sensitivity_analysis_data.csv
-# - figures/FigureS6_detection_limits.png
-# - figures/FigureS5_sensitivity_analysis.png
+# - summary_tables/FigureS5_detection_limit_data.csv
+# - summary_tables/FigureS5_detection_limit_value.csv
+# - summary_tables/FigureS6_sensitivity_analysis_data.csv
+# - figures/FigureS5_detection_limits.png
+# - figures/FigureS6_sensitivity_analysis.png
 #
 # Notes:
 # - Figure S6 identifies the minimum detectable lipid enrichment under the
@@ -50,7 +50,7 @@ alpha_sigma <- 0.10
 
 #### approximate uncertainties in F values ####
 # Approximate analytical uncertainty in lipid F values ~ +/-3 permil
-sigma_F_lipid <- 0.47
+sigma_F_lipid <- 0.5
 
 # Approximate tracer-water uncertainty ~ +/-500 permil
 sigma_FL <- 100
@@ -110,7 +110,7 @@ FL_detection_ppm <- 3700 # 0.37 at % 2H
 t_detection_days <- 14 # 14-day incubations
 
 detection_df <- tibble(
-  Ft_minus_F0_ppm = seq(0.1, 100, length.out = 1000)
+  Ft_minus_F0_ppm = seq(0.1,100,length.out=100000)
 ) %>%
   mutate(
     F0_ppm = F0_ppm,
@@ -164,8 +164,9 @@ Ft_detection_delta <- F_ppm_to_delta(
 detection_limit_delta_permil <-
   Ft_detection_delta - F0_delta
 
+#### print detection limits ####
 cat("Minimum detectable lipid 2H enrichment:",
-    round(detection_limit_ppm, 2), "ppm\n")
+    round(detection_limit_ppm, 4), "ppm\n")
 
 cat("Minimum detectable lipid δ2H  enrichment:",
     round(detection_limit_delta_permil, 2), "permil\n")
@@ -181,13 +182,13 @@ cat("Generation time at detection limit:",
 # save files
 write.csv(
   detection_df,
-  file.path(summary_dir, "FigureS6_detection_limit_data.csv"),
+  file.path(summary_dir, "FigureS5_detection_limit_data.csv"),
   row.names = FALSE
 )
 
 write.csv(
   detection_limit,
-  file.path(summary_dir, "FigureS6_detection_limit_value.csv"),
+  file.path(summary_dir, "FigureS5_detection_limit_value.csv"),
   row.names = FALSE
 )
 
@@ -259,7 +260,7 @@ p_detection_limit <- ggplot(
   
   scale_x_log10(
     limits = c(0.1, 100),
-    breaks = c(0.1, 1, detection_limit_ppm, 10, 100)
+    breaks = c(0.1, 1, round(detection_limit_ppm,1), 10, 100)
   ) +
   
   scale_y_log10(
@@ -286,7 +287,7 @@ p_detection_limit <- ggplot(
 p_detection_limit
 
 ggsave(
-  file.path(figure_dir, "FigureS6_detection_limits.png"),
+  file.path(figure_dir, "FigureS5_detection_limits.png"),
   plot = p_detection_limit,
   width = 5,
   height = 4,
@@ -346,12 +347,23 @@ sensitivity_df <- expand_grid(
 
 write.csv(
   sensitivity_df,
-  file.path(summary_dir, "FigureS5_sensitivity_analysis_data.csv"),
+  file.path(summary_dir, "FigureS6_sensitivity_analysis_data.csv"),
   row.names = FALSE
 )
 
 
 ##### plot sensitivity analysis ####
+# make subplot labels
+panel_labels <- tibble(
+  label_panel = factor(
+    c("0.37 at% ²H", "1 at% ²H", "10 at% ²H"),
+    levels = c("0.37 at% ²H", "1 at% ²H", "10 at% ²H")
+  ),
+  panel_letter = c("A", "B", "C"),
+  x = 500,
+  y = 0.02
+)
+
 # make labels for Delta2H legend
 deltaH_labels <- deltaH_scenarios %>%
   mutate(
@@ -370,6 +382,7 @@ deltaH_label_vector <- setNames(
   deltaH_labels$deltaH_permil
 )
 
+# make plot
 p_sensitivity <- ggplot(
   sensitivity_df,
   aes(
@@ -388,6 +401,17 @@ p_sensitivity <- ggplot(
     yintercept = 14,
     color = "black",
     linewidth = 0.6
+  ) +
+  geom_text(
+    data = panel_labels,
+    aes(
+      x = x,
+      y = y,
+      label = panel_letter
+    ),
+    inherit.aes = FALSE,
+    fontface = "bold",
+    size = 6
   ) +
   annotate(
     "text",
@@ -424,7 +448,7 @@ p_sensitivity <- ggplot(
   ) +
   scale_linetype_manual(
     values = c("0.56" = "solid", "0.76" = "dashed"),
-    name = expression(alpha)
+    name = expression("Assimilation Efficiency ("*alpha*")")
   ) +
   theme_bw() +
   theme(
@@ -446,9 +470,10 @@ p_sensitivity <- ggplot(
 p_sensitivity
 
 ggsave(
-  file.path(figure_dir, "FigureS5_sensitivity_analysis.png"),
+  file.path(figure_dir, "FigureS6_sensitivity_analysis.png"),
   plot = p_sensitivity,
   width = 11,
   height = 4.25,
   dpi = 300
 )
+

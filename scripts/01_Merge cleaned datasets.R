@@ -9,10 +9,10 @@ library("tidyverse")
 library("purrr")
 
 #### load cleaned datasets ####
-GDGT <- read.csv("01 Cleaned Data/Cleaned_GDGT_Abundance_data.csv")
-BP <- read.csv("01 Cleaned Data/Cleaned_BP_Abundance_data.csv")
-d2H <- read.csv("01 Cleaned Data/Cleaned_BP_d2H_data.csv")
-metadata <- read.csv("01 Cleaned Data/Cleaned_LHSIP_Experimental_Metadata.csv")
+GDGT <- read.csv("data_inputs/Cleaned_GDGT_Abundance_data.csv")
+BP <- read.csv("data_inputs/Cleaned_BP_Abundance_data.csv")
+d2H <- read.csv("data_inputs/Cleaned_BP_d2H_data.csv")
+metadata <- read.csv("data_inputs/Cleaned_LHSIP_Experimental_Metadata.csv")
 
 #### merge datasets ####
 # remove index columns before merging datasets
@@ -107,4 +107,4 @@ for (i in seq_len(nrow(d2H_map))) {
 
 
 #### Save worked up data ####
-write.csv(all_data, file = "01 Cleaned Data/LHSIP_All_Merge.csv")
+write.csv(all_data, file = "data_inputs/LHSIP_All_Merge.csv")
