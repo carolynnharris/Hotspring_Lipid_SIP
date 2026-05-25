@@ -236,7 +236,7 @@ make_ri_plot <- function(site_name, panel_letter) {
     ) +
     labs(
       title = site_name,
-      x = "Time (days)",
+      x = "Incubation Time (days)",
       y = "Ring Index",
       tag = panel_letter
     ) +
@@ -270,7 +270,7 @@ make_gdgt_plot <- function(site_name, panel_letter) {
       breaks = c(0, 0.5, 1)
     ) +
     labs(
-      x = "Time (days)",
+      x = "Incubation Time (days)",
       y = "Relative Abundance",
       tag = panel_letter
     ) +
@@ -308,7 +308,7 @@ make_bp_plot <- function(site_name, panel_letter) {
       breaks = c(0, 50, 100)
     ) +
     labs(
-      x = "Time (days)",
+      x = "Incubation Time (days)",
       y = "Relative Abundance",
       tag = panel_letter
     ) +
