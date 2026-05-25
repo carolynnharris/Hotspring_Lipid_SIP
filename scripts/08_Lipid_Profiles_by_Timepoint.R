@@ -200,22 +200,74 @@ panel_theme <- theme_bw() +
   )
 
 #### plotting functions ####
+# make_ri_plot <- function(site_name, panel_letter) {
+#   ggplot(
+#     ri_long %>% filter(Site == site_name),
+#     aes(
+#       x = Incubation_days,
+#       y = Ring_Index,
+#       color = RI_type,
+#       shape = Type_label,
+#       linetype = Type_label,
+#       group = interaction(RI_type, Type_label)
+#     )
+#   ) +
+#     geom_line(linewidth = 0.7, na.rm = TRUE) +
+#     geom_point(size = 2.8, fill = "white", stroke = 1.1, na.rm = TRUE) +
+#     scale_color_manual(
+#       values = c("RI-GDGT" = "#EF3B2C", "RI-BP" = "#40BFFF"),
+#       name = NULL
+#     ) +
+#     scale_shape_manual(
+#       values = c("Exp." = 21, "Cnt-Live" = 24, "Cnt-Kill" = 25),
+#       name = NULL
+#     ) +
+#     scale_linetype_manual(
+#       values = c("Exp." = "solid", "Cnt-Live" = "dashed", "Cnt-Kill" = "dotted"),
+#       name = NULL
+#     ) +
+#     scale_x_continuous(
+#       breaks = c(0, 3, 14),
+#       limits = c(-0.5, 14.5)
+#     ) +
+#     scale_y_continuous(
+#       limits = c(0, 3.35),
+#       breaks = c(0, 1, 2, 3)
+#     ) +
+#     labs(
+#       title = site_name,
+#       x = "Incubation Time (days)",
+#       y = "Ring Index",
+#       tag = panel_letter
+#     ) +
+#     panel_theme
+# }
+
 make_ri_plot <- function(site_name, panel_letter) {
   ggplot(
-    ri_long %>% filter(Site == site_name),
+    ri_long %>%
+      filter(Site == site_name) %>%
+      mutate(
+        RI_fill = ifelse(RI_type == "RI-GDGT", Site, "RI-BP")
+      ),
     aes(
       x = Incubation_days,
       y = Ring_Index,
-      color = RI_type,
+      color = Site,
+      fill = RI_fill,
       shape = Type_label,
       linetype = Type_label,
       group = interaction(RI_type, Type_label)
     )
   ) +
     geom_line(linewidth = 0.7, na.rm = TRUE) +
-    geom_point(size = 2.8, fill = "white", stroke = 1.1, na.rm = TRUE) +
+    geom_point(size = 2.8, stroke = 1.1, na.rm = TRUE) +
     scale_color_manual(
-      values = c("RI-GDGT" = "#EF3B2C", "RI-BP" = "#40BFFF"),
+      values = c("Beryl" = "green3", "ETAT-3" = "navyblue"),
+      name = NULL
+    ) +
+    scale_fill_manual(
+      values = c("Beryl" = "green3", "ETAT-3" = "navyblue", "RI-BP" = "white"),
       name = NULL
     ) +
     scale_shape_manual(
@@ -282,6 +334,8 @@ make_gdgt_plot <- function(site_name, panel_letter) {
     )
 }
 
+
+
 make_bp_plot <- function(site_name, panel_letter) {
   ggplot(
     bp_long %>% filter(Site == site_name),
@@ -305,7 +359,8 @@ make_bp_plot <- function(site_name, panel_letter) {
     ) +
     scale_y_continuous(
       limits = c(0, 100),
-      breaks = c(0, 50, 100)
+      breaks = c(0, 50, 100),
+      labels = c("0", "0.5", "1.0")
     ) +
     labs(
       x = "Incubation Time (days)",
@@ -321,33 +376,61 @@ make_bp_plot <- function(site_name, panel_letter) {
 }
 
 #### legend plots ####
-ri_legend_plot <- ggplot(
-  ri_long,
-  aes(
-    x = Incubation_days,
-    y = Ring_Index,
-    color = RI_type,
-    shape = Type_label,
-    linetype = Type_label,
-    group = interaction(RI_type, Type_label)
-  )
-) +
-  geom_line(linewidth = 0.7) +
-  geom_point(size = 2.8, fill = "white", stroke = 1.1) +
-  scale_color_manual(
-    values = c("RI-GDGT" = "#EF3B2C", "RI-BP" = "#40BFFF"),
-    name = NULL
+
+ri_legend_df <- tibble(
+  legend_group = c(
+    "Ring Index", "Ring Index",
+    "Treatment", "Treatment", "Treatment"
+  ),
+  label = c(
+    "RI-GDGT", "RI-BP",
+    "Experimental", "Control-Live", "Control-Killed"
+  ),
+  x = 1,
+  # y = c(5, 4, 2.5, 1.5, 0.5),
+  y = c(5.2, 4.2, 2.2, 1.2, 0.2),
+  shape = c(21, 21, 21, 24, 25),
+  fill = c("black", "white", "white", "white", "white")
+)
+
+ri_leg_plot <- ggplot(ri_legend_df, aes(x = x, y = y)) +
+  geom_point(
+    aes(shape = shape, fill = fill),
+    color = "black",
+    size = 3,
+    stroke = 1.1,
+    show.legend = FALSE
   ) +
-  scale_shape_manual(
-    values = c("Exp." = 21, "Cnt-Live" = 24, "Cnt-Kill" = 25),
-    name = NULL
+  geom_text(
+    aes(label = label),
+    x = 1.25,
+    hjust = 0,
+    size = 4
   ) +
-  scale_linetype_manual(
-    values = c("Exp." = "solid", "Cnt-Live" = "dashed", "Cnt-Kill" = "dotted"),
-    name = NULL
+  annotate(
+    "text",
+    x = 1,
+    y = 6,
+    label = "Ring Index",
+    hjust = 0,
+    size = 4.2
   ) +
-  theme_void() +
-  theme(legend.position = "right")
+  annotate(
+    "text",
+    x = 1,
+    y = 3,
+    label = "Treatment",
+    hjust = 0,
+    size = 4.2
+  ) +
+  scale_shape_identity() +
+  scale_fill_identity() +
+  coord_cartesian(
+    xlim = c(0.8, 3.2),
+    ylim = c(0, 6.2),
+    clip = "off"
+  ) +
+  theme_void()
 
 
 gdgt_legend_plot <- ggplot(
@@ -385,14 +468,14 @@ bp_legend_plot <- ggplot(
   theme_void() +
   theme(legend.position = "right")
 
-#### extract legends using patchwork-friendly guide areas ####
-ri_leg <- cowplot::get_legend(ri_legend_plot)
+#### extract legends ####
 gdgt_leg <- cowplot::get_legend(gdgt_legend_plot)
 bp_leg <- cowplot::get_legend(bp_legend_plot)
 
-ri_leg_plot <- cowplot::ggdraw(ri_leg)
-gdgt_leg_plot <- cowplot::ggdraw(gdgt_leg)
-bp_leg_plot <- cowplot::ggdraw(bp_leg)
+gdgt_leg_plot <- cowplot::ggdraw() +
+  cowplot::draw_plot(gdgt_leg, x = -0.3)
+bp_leg_plot <- cowplot::ggdraw() +
+  cowplot::draw_plot(bp_leg, x = -0.33)
 
 #### make individual panels ####
 p_A <- make_ri_plot("Beryl", "A")
@@ -410,7 +493,7 @@ p_lipid_profiles <-
   (p_C | p_D | gdgt_leg_plot) /
   (p_E | p_F | bp_leg_plot) +
   plot_layout(
-    widths = c(1, 1, 0.1),
+    widths = c(1, 1, 0.2),
     heights = c(1, 1, 1)
   )
 
