@@ -1,6 +1,6 @@
 # Hotspring LH-SIP Analysis in R
 
-R scripts, cleaned input data, summary tables, and figures associated with the hot spring LH-SIP analysis for the manuscript "Lipid Hydrogen Stable Isotope Probing Reveals Decadal-Scale Generation Times for Archaea in Hot Spring Sediments" (Harris et al., submitted) (bioRxiv: prepint doi: https://doi.org/10.64898/2026.05.15.725266)
+R scripts, cleaned input data, summary tables, and figures associated with the hot spring LH-SIP analysis for the manuscript "Lipid Hydrogen Stable Isotope Probing Reveals Decadal-Scale Generation Times for Archaea in Hot Spring Sediments" (Harris et al., in press at JGR Biogeosciences) (bioRxiv: prepint doi: https://doi.org/10.64898/2026.05.15.725266)
 
 ## Repository structure
 
